@@ -20,6 +20,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public SS selectByPrimaryKey(Integer userId) {
         logger.info("进入实现类方法");
+        logger.info("测试github提交");
         return ssMapper.selectByPrimaryKey(userId);
     }
 }
