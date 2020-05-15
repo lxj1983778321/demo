@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.demo.mapper.USE_INFOMapper" >
+  <resultMap id="BaseResultMap" type="com.example.demo.Dao.USE_INFO" >
+    <id column="use_id" property="useId" jdbcType="INTEGER" />
+    <result column="use_name" property="useName" jdbcType="VARCHAR" />
+    <result column="use_age" property="useAge" jdbcType="VARCHAR" />
+    <result column="use_sex" property="useSex" jdbcType="BIT" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    use_id, use_name, use_age, use_sex
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+    select 
+    <include refid="Base_Column_List" />
+    from use_info
+    where use_id = #{useId,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from use_info
+    where use_id = #{useId,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.example.demo.Dao.USE_INFO" >
+    insert into use_info (use_id, use_name, use_age, 
+      use_sex)
+    values (#{useId,jdbcType=INTEGER}, #{useName,jdbcType=VARCHAR}, #{useAge,jdbcType=VARCHAR}, 
+      #{useSex,jdbcType=BIT})
+  </insert>
+  <insert id="insertSelective" parameterType="com.example.demo.Dao.USE_INFO" >
+    insert into use_info
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="useId != null" >
+        use_id,
+      </if>
+      <if test="useName != null" >
+        use_name,
+      </if>
+      <if test="useAge != null" >
+        use_age,
+      </if>
+      <if test="useSex != null" >
+        use_sex,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="useId != null" >
+        #{useId,jdbcType=INTEGER},
+      </if>
+      <if test="useName != null" >
+        #{useName,jdbcType=VARCHAR},
+      </if>
+      <if test="useAge != null" >
+        #{useAge,jdbcType=VARCHAR},
+      </if>
+      <if test="useSex != null" >
+        #{useSex,jdbcType=BIT},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.example.demo.Dao.USE_INFO" >
+    update use_info
+    <set >
+      <if test="useName != null" >
+        use_name = #{useName,jdbcType=VARCHAR},
+      </if>
+      <if test="useAge != null" >
+        use_age = #{useAge,jdbcType=VARCHAR},
+      </if>
+      <if test="useSex != null" >
+        use_sex = #{useSex,jdbcType=BIT},
+      </if>
+    </set>
+    where use_id = #{useId,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.example.demo.Dao.USE_INFO" >
+    update use_info
+    set use_name = #{useName,jdbcType=VARCHAR},
+      use_age = #{useAge,jdbcType=VARCHAR},
+      use_sex = #{useSex,jdbcType=BIT}
+    where use_id = #{useId,jdbcType=INTEGER}
+  </update>
+</mapper>

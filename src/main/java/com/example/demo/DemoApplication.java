@@ -1,21 +1,23 @@
 package com.example.demo;
 
-import org.apache.ibatis.annotations.Mapper;
+
 import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+
 
 @SpringBootApplication
 @MapperScan(value = "com.example.demo.mapper")
-public class DemoApplication {
+public class DemoApplication implements CommandLineRunner {
 
 	public static void main(String[] args)
 	{
 		SpringApplication.run(DemoApplication.class, args);
+	}
+
+	@Override
+	public void run(String... args) throws Exception {
+
 	}
 }
