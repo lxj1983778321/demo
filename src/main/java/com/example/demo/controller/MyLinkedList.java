@@ -7,8 +7,8 @@ package com.example.demo.controller;
  * @Version 1.0
  **/
 public class MyLinkedList {
-    private Node head;
-    private Node last;
+    private LinkedNode head;
+    private LinkedNode last;
     private int size;
 
     /**
@@ -19,62 +19,62 @@ public class MyLinkedList {
             throw new IndexOutOfBoundsException("超过链表节点范围");
         }
         //生成新节点
-        Node insertNode = new Node(data);
+        LinkedNode insertLinkedNode = new LinkedNode(data);
         //空链表
         if(size == 0){
-            head = insertNode;
-            last = insertNode;
+            head = insertLinkedNode;
+            last = insertLinkedNode;
         }
         //头插
         else if(index == 0){
             //head存的是现有头节点
-            insertNode.next = head;
-            head = insertNode;
+            insertLinkedNode.next = head;
+            head = insertLinkedNode;
         }
         //尾插
         else if(index == size){
-            last.next = insertNode;
-            last = insertNode;
+            last.next = insertLinkedNode;
+            last = insertLinkedNode;
         }
         //插中间
         else {
-            Node prevNode = get(index-1);
-            insertNode.next = prevNode.next;
-            prevNode.next = insertNode;
+            LinkedNode prevLinkedNode = get(index-1);
+            insertLinkedNode.next = prevLinkedNode.next;
+            prevLinkedNode.next = insertLinkedNode;
         }
         size++;
     }
 
-    public Node remove(int index){
+    public LinkedNode remove(int index){
         if(index < 0 || index >size){
             throw new IndexOutOfBoundsException("超过链表节点范围");
         }
-        Node removeNode = null;
+        LinkedNode removeLinkedNode = null;
         //删除头节点
         if(index == 0){
-            removeNode = head;
+            removeLinkedNode = head;
             head = head.next;
         }
         //删除尾节点
         else if(index == size){
-            Node lastnode= get(index-1);
-            removeNode = lastnode.next;
-            last = lastnode;
-            lastnode.next = null;
+            LinkedNode lastLinkedNode= get(index-1);
+            removeLinkedNode = lastLinkedNode.next;
+            last = lastLinkedNode;
+            lastLinkedNode.next = null;
         }
         //删除中间节点
         else {
-            Node prevNode = get(index-1);
-            removeNode = prevNode.next;
-            prevNode.next = prevNode.next.next;
+            LinkedNode prevLinkedNode = get(index-1);
+            removeLinkedNode = prevLinkedNode.next;
+            prevLinkedNode.next = prevLinkedNode.next.next;
         }
         size--;
-        return removeNode;
+        return removeLinkedNode;
     }
 
     //输出链表节点
     public void outPut(){
-        Node temp = head;
+        LinkedNode temp = head;
         while (temp != null){
             System.out.println(temp.data);
             temp = temp.next;
@@ -82,8 +82,8 @@ public class MyLinkedList {
     }
 
     //查找链表节点
-    public Node get(int index){
-        Node temp = head;
+    public LinkedNode get(int index){
+        LinkedNode temp = head;
         for (int i = 0; i < index; i++) {
             temp = temp.next;
         }
@@ -103,10 +103,10 @@ public class MyLinkedList {
 }
 
 //链表节点
-class Node{
-    Node next;
+class LinkedNode{
+    LinkedNode next;
     int data;
-    Node(int data){
+    LinkedNode(int data){
         this.data = data;
     }
 }
