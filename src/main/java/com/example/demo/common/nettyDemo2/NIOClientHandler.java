@@ -1,4 +1,4 @@
-package com.example.demo.common;
+package com.example.demo.common.nettyDemo2;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerAdapter;

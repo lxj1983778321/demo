@@ -1,12 +1,7 @@
-package com.example.demo.common;
+package com.example.demo.common.nettyDemo2;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.CharsetUtil;
-
-import java.nio.charset.Charset;
 
 public class NioServerHandler extends ChannelHandlerAdapter {
 
