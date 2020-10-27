@@ -1,0 +1,6 @@
+Phaser:
+CyclicBarrier类缺点：
+（1）不能动态增加parties计数
+（2）调用一次await()方法仅占用一个计数
+基于以上缺点，JDK1.7增加了一个phaser类来解决以上问题
+Phaser类当线程达到条件，度过屏障后，已使用parties自动重置为0，屏障可以重新使用

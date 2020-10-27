@@ -1,0 +1,5 @@
+invokenAny()：取得第一个完成任务的结果值，当第一个任务执行完成后，会调用interrupt()方法将其他任务中断，
+可以结合if(Thread.currentThread().isInterrupt()==true)代码来决定任务是否继续执行
+（1）如果使用invokeAny()方法而某一个任务正确返回值时，则其他callable抛出的异常在main()中不能被处理
+（2）如果invokeAny()方法都没有正确返回值，则说明最后callable抛出异常在main()中被处理
+invokenAll()：等全部任务执行完成后，返回全部任务的结果值

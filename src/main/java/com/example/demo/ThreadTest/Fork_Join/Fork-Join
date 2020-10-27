@@ -1,0 +1,53 @@
+JDK1.7版本中提供了Fork/Join 并行执行任务框架，主要作用是把大任务分割成若干个小任务，再对每个小任务得到的结果进行汇总，此种开发方法叫分治编程
+
+JDK并行执行框架Fork-Join中使用了“工作窃取”算法，是指某个线程从其他队列里窃取任务来执行。
+
+工作窃取：
+例如完成一个大任务，完全可以把这个大任务分割为若干个互不依赖的子任务/小任务，为了方便管理，将子任务分别放在不同的队列中，
+这时会出现有的线程把自己队列里的任务快速执行完毕，而其他线程还有任务等待处理，完成任务的线程与其等待，不如去帮助其他线程，
+于是，他就去其它线程队列中窃取一个任务来执行，这就是所谓的“工作窃取”算法
+
+JDK1.7中实现分治编程需要使用ForkJoinPool类，此类主要作用是创建一个任务池
+执行具体任务是ForkJoinTask类，此类是抽象类，需要该类的子类CountedCompleter、RecursiveAction、RecursiveTask来实现具体功能
+
+RecursiveAction类：执行任务无返回值，仅执行一次的任务
+
+invokeAll()是同步方法，直到提交给池的任务完成才可以工作窃取
+fork()是异步方法，提交任务给执行者的方法会立即返回，继续执行，只有调用get()或join()等待任务执行完成时，才可以使用工作窃取
+
+
+ForkJoinPool shutdown()和shutdownNow()总结：
+shutdown() 每个人物正常运行直到结束，池关闭后不允许再有新任务被执行并抛出RejectedExecutionException
+shutdownNow()
+（1）shutdownNow()结合if(Thread.currentThread().isInterrupted() == true)判断：
+立即停止正在执行的任务，池关闭后不允许再执行新任务并抛出RejectedExecutionException异常
+（2）shutdownNow()不结合if(Thread.currentThread().isInterrupted() == true)判断：
+每个任务正常运行直到结束，池关闭后不再允许新任务被执行并抛出RejectedExecutionException异常
+
+isTerminating()和isTerminated()
+isTerminating():判断线程是否正在终止，正在终止返回true（如果正在执行的程序，处于shutdown()\shutDownNow()方法之后处于正在终止但尚未完全终止时）
+isTerminated()：判断已经关闭，返回true
+
+isShutdown()：判断线程池是否已经关闭，只要调用shutdown()方法返回的就是true
+awaitTermination(long timeout,TimUnit unit)：等待指定时间内，线程池是否已经终止工作，具有阻塞性（如果当前任务正在执行，则进行阻塞,等待指定时间后，如果没有任务则不再阻塞）
+
+execute(task)、submit(task)、invoke(task)
+他们都可以在异步队列中执行任务，
+区别：
+execute(task)只执行任务，没有返回值
+submit(task)有返回值，返回值类型是ForkJoinTask
+invoke(task)方法也有返回值，区别是invoke(task)方法是直接将返回值进行返回，不需要通过ForkJoinTask对象，方法invoke是阻塞的
+
+监视pool池的状态
+getParallelism()：获得并行的数量，与cpu内核有关
+getPoolSize()：获得任务池的大小
+getQueuedSubmissionCount()：取得已经提交但尚未被执行的任务数量
+hasQueuedSubmissions()：判断队列中是否有未执行的任务
+getActiveThreadCount()：获得活动的线程个数
+getQueuedTaskCount()：获得偷窃的任务个数
+getRunningThreadCount()：获得正在运行并且不在阻塞状态下的线程个数
+isQuiescent()：判断任务池是否是静止未执行任务的状态
+
+isCompletedAbnormally()：判断任务是否出现异常
+isCompletedNormally()：判断任务是否正常执行完毕
+getException()：返回报错异常

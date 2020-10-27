@@ -1,7 +1,8 @@
 package com.example.demo.controller;
 
 /**
- * @Description TODO
+ * @Description
+ * 栈
  * @Author lixingjian
  * @DATE 2020/6/10 14:35
  * @Version 1.0
@@ -50,14 +51,33 @@ public class MyStack {
 
     public static void main(String[] args) {
         MyStack myStack = new MyStack();
-        myStack.insert(0);
-        myStack.insert(1);
-        myStack.insert(2);
-        myStack.insert(3);
-        myStack.output();
-        myStack.remove();
-        myStack.output();
+       int[] ss = new int[]{4,3,2,1,0};
+       //构建栈
+        for(int i=0;i<ss.length;i++){
+            if(ss[i] == i){
 
+                continue;
+            }else {
+                myStack.insert(i);
+            }
+        }
+        myStack.output();
+        /*int temp = 0;
+        if(myStack.size == ss.length){
+            for(int i=0;i<myStack.size;i++){
+                StackNode node = myStack.remove();
+                if(node.data == ss[i]){
+                    continue;
+                }else {
+                    temp = 1;
+                }
+            }
+        }
+        if(temp == 0){
+            System.out.println(temp);
+        }else {
+            System.out.println(temp);
+        }*/
     }
 }
 class StackNode{

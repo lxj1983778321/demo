@@ -1,0 +1,18 @@
+Callable和Runnable的区别：
+（1）Callable接口的call()方法有返回值（返回值通过Future接口进行获取），Runnable的run()方法没有返回值
+（2）Callable接口的Call()方法可以声明抛出异常，Runnable的run()方法不可以抛出异常
+get(long timeout,TimUnit unit)作用：是在指定的时间内，获取返回值，失败抛出TimeoutException
+
+callable对于异常的处理:出现异常就会进入catch块处理异常，
+一句话总结：出现异常，就会进入catch块进行异常处理流程，不会继续向下执行
+
+方法execute()与submit()的区别
+（1）execute()方法只能提交Runnable到线程池，submit()即可以提交Runnable，也可以提交Callable
+（2）execute()方法没有返回值，submit()方法有返回值
+（3）execute()方法默认情况下异常直接抛出，不可以捕获，可以通过自定义TnreadFactory方式进行捕获，submit()方法可以通过catch块捕获异常
+
+Future的缺点：
+Callable与Runnable相比的主要优点是可以通过Future取得返回值，但是Future接口调用get()方法取得处理的结果值时是阻塞性的，
+也就是如果调用Future对象的get()方法时，任务尚未执行完成，那么调用get()方法时，会一直阻塞到此任务完成时为止，如果是这样的效果
+则前面执行的任务一旦耗时很多，后面的任务调用get()方法就呈现阻塞状态，也就是排队进行等待，大大影响运行效率。
+这样的话，主线程并不能保证首先获得是最先完成任务的返回值，这就是Future的缺点。

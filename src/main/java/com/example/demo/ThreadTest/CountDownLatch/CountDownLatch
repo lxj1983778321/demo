@@ -1,0 +1,9 @@
+在java并发包中常见的线程同步控制类有CountDownLatch和CyclicBarrier，
+CountDownLatch：
+所提供的功能是判断count计数不为0时，当前线程呈现wait状态，即在屏障处等待
+类CountDownLatch是一个同步辅助工具类，使用效果是给定一个计数，当使用这个CountDownLatch类的线程判断计数不为0是，呈现wait状态，为0继续运行
+CountDownLatch对于中断异常的处理是，产生中断异常的那个线程，抛出中断异常，只要countDownLatch构造函数可以减为0，那么并不会影响其他线程的运转
+实现等待和继续的方法分别是await()和countDown()方法
+调用await()方法判断计数是否为0，如果不为0则是等待状态，其他线程调用countDown方法将计数减1，当计数减为0，呈等待状态的线程，继续运行，
+方法getCount()方法是获取当前的计数个数
+注意：计数无法被重置，如果需要重置，可以考虑使用CyclicBarrier

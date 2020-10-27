@@ -1,5 +1,9 @@
 package com.example.demo.Dao;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
+
+@Component
 public class USE_INFO {
     private Integer useId;
 

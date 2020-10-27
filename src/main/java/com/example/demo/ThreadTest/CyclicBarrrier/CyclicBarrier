@@ -1,0 +1,19 @@
+CyclicBarier类：
+线程同步辅助类
+CyclicBarier类是加法的操作
+不仅具有CountDownLatch所具有的功能，还可以实现屏障等待的功能，
+使用上的意义在于可以循环实现线程要一起做任务的目标，不同于CountDownLatch一样，仅支持一次线程与同步点阻塞的特性
+类CyclicBarier允许一组线程互相等待，直到到达某个公共屏障点，CyclicBarier类的公共屏障点可以重用。
+ CyclicBarrier类对于中断异常的处理是使用全有或者全无的破坏模型。
+ 即如果有一个线程由于中断或者超时等原因离开了屏障点，那么其它线程也会抛出BrokenBarrierException异常或者InterruptedException异常，并离开屏障点
+CyclicBarier类和CountDownLatch区别：
+（1）CountDownLatch是一个线程或多个线程，等待另外一个或多个线程完成某件事之后继续执行
+（2）CyclicBarier是多个线程之间互相等待，任何一个线程没有完成之前，所有线程必须等待
+（3）CountDownLatch和CyclicBarier处理中断异常的方式不同：
+        CyclicBarier一旦有线程产生中断异常离开屏障点，其它线程会抛出BrokenBarrierException，并离开屏障点
+        CountDownLatch是如果有线程抛出中断异常，该线程进入中断异常处理程序，并不会影响其它线程的运转，其他线程正常执行以下逻辑
+CountDownLatch像俩个角色之间在互相等待，CyclicBarier像是同类之间互相等待
+
+getNumberWaiting()方法：查看有几个线程到达屏障点
+getParties()方法：是取得parties的个数
+reset()方法：重置屏障

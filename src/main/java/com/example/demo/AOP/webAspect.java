@@ -16,10 +16,17 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 
 @Aspect
-@Order(5) // 有多个日志时，ORDER可以定义切面的执行顺序（数字越大，前置越后执行，后置越前执行）
+@Order(5) //当有多个切面时，确定具体的执行顺序，ORDER可以定义切面的执行顺序（数字越大，前置越后执行，后置越前执行）
 @Component
 public class webAspect {
 
+    /**
+     * 具体使用哪种代理方式，是spring自行切换的
+     * 使用的是cglib动态代理：
+     * 什么情况下使用jdk动态代理，什么情况下使用cglib动态代理：
+     * 当类实现的是接口是，使用jdk动态代理，即XXXClass impl XXXInterface
+     * 当某个类继承的是类或者只有某个类是，使用cglib动态代理实现
+     */
     private Logger logger = LoggerFactory.getLogger(webAspect.class);
     private ThreadLocal<Long> start = new ThreadLocal<Long>();
 

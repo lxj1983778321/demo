@@ -1,0 +1,62 @@
+线程资源使用线程池提供，可以减少创建和销毁消耗的的时间以及系统的内存开销，
+如果不使用线程池，有可能造成系统创建大量同类线程而导致消耗内存或者‘过度切换’问题
+newCachedThreadPool:无界线程池，可能会创建大量请求，导致OOM
+FixedThreadPool和SingThreadPool:允许请求的队列长度为Integer.MAX_VALUE,可能堆积大量请求，导致OOM
+出现上述问题的原因是因为使用的阻塞队列不同
+常用的BlockingQueue：
+（1）ArrayBlockingQueue:数组构成的有界阻塞队列，必须指定队列大小，内部使用ReentrantLock的公平和非公平锁实现
+（2）LinkedBlockingQueue：链表组成的有界阻塞队列，可以不指定大小，默认值是Integer.MAX_VALUE
+（3）SynchronousQueue:没有缓冲的无界队列（即当执行插入操作时，必须有等待取出的操作），newCachedThreadPool用的使这种队列
+（4）PriorityBlockingQueue：支持优先级排序的无界队列，可以指定初始容量大小（注意初始容量并不代表最大容量），或者不指定，默认大小为 11。
+（5）LinkedBlockingDeque：链表结构的双向阻塞队列
+
+也可以传入一个比较器，把元素按一定的规则排序，不指定比较器的话，默认是自然顺序。
+
+建议使用ThreadPoolExecutor，根据使用场景自定义线程池资源，避免内存过度消耗导致的OOM问题等
+ThreadPoolExecutor：
+public ThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue) {
+    this(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, Executors.defaultThreadFactory(), defaultHandler);
+}
+int corePoolSize：池中保存的线程数，核心池的大小
+int maximumPoolSize：池中允许的最大线程数
+long keepAliveTime：空闲线程的最大存活时间
+TimeUnit unit：时间单位
+BlockingQueue<Runnable> workQueue：保持任务的队列，此队列仅保持用于execute方法提交的Runnable任务
+Executors.defaultThreadFactory()：ThreadFactory工厂，可以对线程池中的线程进行专属自定义，例如为每个线程更改名称
+defaultHandler：线程池的拒绝策略，默认为AbortPolicy策略
+拒绝策略类型：
+（1）AbortPolicy策略：当任务添加到线程池中被拒绝时，抛出RejectExecutionException异常
+（2）CallerRunsPolicy策略：当任务添加到线程池中被拒绝时，会调用线程池的Thread线程对象处理被拒绝的任务
+（3）DiscardOldestPolicy策略：当任务添加到线程池中被拒绝时，线程池会放弃等待队列中最旧的未处理任务，然后将拒绝的任务添加到等待队列中
+（4）DiscardPolicy策略：当任务添加到线程池中被拒绝时，线程池将丢弃被拒绝的任务
+
+shutdown()方法：当前正在执行的线程以及任务队列中的线程继续执行，而不再添加新的任务，
+shutdown()方法不会阻塞，调用shutdown()方法后，主线程main()就马上结束了，而线程池会继续运行，知道所有任务运行完才会停止。
+
+shutDownNow()：中断所有的任务，并抛出InterruptedException异常，
+前提是在Runnable中使用if(Thread.currentThread.isinterrupt() == teue)语句来判断当前线程的中断状态，而未执行的线程不再执行，从队列中移除
+如果没有if判断语句以及抛出异常的代码，则池中当前运行的线程直到执行完毕，未执行的线程不再执行，从队列中清除。
+
+isShutdown()：判断线程池是否已经关闭，只要调用了shutdown()方法，isShutdown()方法的返回值就是true
+isTerminating():判断线程池是否正在终止，是返回true（如果正在执行的程序，处于shutdown()\shutDownNow()方法之后处于正在终止但尚未完全终止时）
+isTerMinzted()：线程池已经关闭，返回true
+
+awaitTermination(long timeout,TimeUnit unit):查看在指定时间内，线程池是否已经终止工作，即等待指定时间后判断线程池是否已经终止工作，
+具有阻塞性（如果当前任务正在执行，则进行阻塞,等待指定时间后，如果没有任务则不再阻塞）
+
+allowsCoreThreadTimeOut()和allowsCoreThreadTimeOut(boolean value)作用是配置核心线程是否有超时的效果
+
+prestartCoreThread()和prestartAllCoreThreads()：每调用一次就创建一个核心线程，返回值为boolean，含义为：是否启动
+
+getCompletedTaskCount()：取得已经执行完成的任务数
+
+afterExecute()和beforeExecute()重写ThreadPoolExecutor类中的这俩个方法，可以对线程池中执行的线程对象进行监控
+
+remove(Runnable)：可以删除尚未被执行的Runnable任务,注：使用submit()提交的任务未被执行时，remove()方法不能删除此任务
+
+getActiveCount()：获取正在执行任务的线程数
+getCompletedTaskCount():获取已经执行完任务的线程数
+getCorePoolSize()：取得构造方法传入的corePoolSize的值
+getMaxiMumPoolSize()：取得构造方法传入的maximumPoolSize的值
+getPoolSize()：取得池中有多少个线程
+getTaskCount()：取得有多少个任务发送给了线程池

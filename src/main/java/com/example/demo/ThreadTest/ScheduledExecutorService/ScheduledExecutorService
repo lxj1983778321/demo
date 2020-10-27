@@ -1,0 +1,9 @@
+ScheduledExecutorService类：可以将定时任务与线程池功能结合在一起使用
+Java中计划任务Timer工具类提供了以计时器或计划任务的功能来实现按指定时间或时间间隔执行任务，
+但由于Timer工具类是以队列方式来管理线程，所以在高并发下，运行效率较低，所以JDK1.5加入了ScheduledExecutorService类来提高效率
+
+getQueue()：
+取得队列中的任务，这些任务是未来将要运行的，正在运行的任务不在此队列，
+使用scheduleAtFixedRate()和scheduleWithFixedDelay()方法实现周期性执行任务时，未来预执行的任务都在此队列中
+remove()：
+移除将要执行的任务，使用submit()提交的任务未被执行时，remove()方法不能删除此任务
