@@ -97,6 +97,7 @@ public class AStarSearch {
          if(containGrid(openList, x, y)){
              return false;
          }
+         //要好好学习啊，为了明年换工作做准备
          //是否已经在closeList 中
          if(containGrid(closeList, x, y)){
              return false;

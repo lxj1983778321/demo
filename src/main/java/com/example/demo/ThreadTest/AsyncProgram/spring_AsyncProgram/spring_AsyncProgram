@@ -1,0 +1,25 @@
+在spring frameWork中可以用TaskExecutor和TaskScheduler接口提供异步执行和任务调度抽象
+
+主要讲解TaskExecutor支撑的@Async是如何实现异步处理的
+
+spring 2.0版本中提供了一种新的处理执行器（executors）的抽象，即TaskExecutor接口，
+TaskExecutor接口与java.util.concurrent.executor是等价的其只有一个方法
+public interface TaskExecutor {    void execute(Runnable task);}
+spring框架本身内置了很多类型的TaskExecutor实现
+（1）SimpleAsyncTaskExecutor：
+这种接口的实现不会复用线程，对应每个请求会新创建一个对应的线程来执行，他执行的并发限制将阻止任何超出限制的调用，
+这个可以通过setConcurrencyLimit方法来限制并发数，默认是不限制并发数的
+
+（2）SyncTaskExecutor：
+这种接口实现不会异步地执行提交的任务而是会同步使用调用线程来执行，主要用于没有必要多线程进行处理的情况
+
+（3）ConcurrentTaskExecutor：
+这种接口实现是对java.util.concurrent.Executor的包装，
+通过setConcurrentExecutor（Executor concurrentExecutor）接口可以设置一个juc中的线程池到其内部来做适配，一般很少会用到
+
+（4）SimpleThreadPoolTaskExecutor：
+这个实现实际上是Quartz的SimpleThreadPool的子类，它监听spring的生命周期回调，当有可能需要Quartz和非Quartz组件共享的线程池时，通常会使用该实现
+
+（5）TimerTaskExecutor:
+该实现使用单个java.util.Timer对象作为其内部异步线程来执行任务，
+该实现对所有提交的任务都在Timer内的单独线程中执行，尽管提交的多个任务的执行是顺序同步的

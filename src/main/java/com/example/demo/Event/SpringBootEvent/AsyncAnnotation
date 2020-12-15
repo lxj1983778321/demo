@@ -1,0 +1,181 @@
+@Async注解异步执行原理
+对标注@Async注解的类做了代理
+例如：如下的类
+public class AsyncAnnotationExample {
+@Async
+public CompletableFuture<String> doSomething() {
+    // 1.创建future
+    CompletableFuture<String> result = new CompletableFuture<String>();
+    // 2.模拟任务执行
+    try {
+            Thread.sleep(1000);
+            System.out.println(Thread.currentThread().getName() + "doSomething");
+         }
+         catch (Exception e)
+         {
+            e.printStackTrace();
+         }
+         result.complete("done");
+         // 3.返回结果
+         return result;
+     }
+}
+由于AsyncAnnotationExample类中的doSomething()方法使用了@Async注解，
+所以Spring框架在开启异步处理后会对AsyncAnnotationExample实例进行代理，
+代理后的类代码框架如下所示：
+public class AsyncAnnotationExampleProxy {
+    public AsyncAnnotationExample getAsyncTask() {
+        return asyncTask;
+    }
+    public void setAsyncAnnotationExample(AsyncAnnotationExample asyncTask) {
+        this.asyncTask = asyncTask;
+    }
+    private AsyncAnnotationExample asyncTask;
+    private TaskExecutor executor = new SimpleAsyncTaskExecutor();
+    public CompletableFuture<String> dosomthingAsyncFuture() {
+        return CompletableFuture.supplyAsync(new Supplier<String>() {
+        @Override
+        public String get() {
+                try {
+                    return asyncTask.dosomthing().get();
+                }
+                catch (Throwable e) {
+                    throw new CompletionException(e);
+                }
+            }
+        },executor);
+    }
+}
+如上的代码所示：
+Spring会对AsyncAnnotationExample类进行代理，
+并且会把AsyncAnnotationExample的实例注入到AsyncAnnotationExampleProxy内部，
+当我们调用AsyncAnnotationExample的dosomthing()方法时，实际调用的是AsyncAnnotationExampleProxy的dosomthing()方法
+后者使用CompleTableFuture.supplyAsync开启了一个异步处理线程，
+然后在异步任务内具体调用了AsyncAnnotationExample实例的dosomthing()方法
+
+默认情况下，Spring框架是使用Cglib对标注的@Async注解的方法进行代理，具体拦截器是AnnotationAsyncExecutionInterceptor，其invoke方法如下：
+public Object invoke(final MethodInvocation invocation) throws Throwable {
+     //1.被代理的目标对象
+     //本例中为：class:com.example.demo.XXX.AsyncAnnotationExample(类所在路径)的Class对象
+     Class<?> targetClass = (invocation.getThis() != null ? AopUtils.getTargetClass(invocation.getThis()) : null);
+     //2. 获取被代理的方法，
+     //本例中为：public java.util.concurrent.CompletableFuture:com.example.demo.XXX.AsyncAnnotationExample.dosomthing();
+     Method specificMethod = ClassUtils.getMostSpecificMethod(invocation.getMethod(), targetClass);
+     final Method userDeclaredMethod = BridgeMethodResolver.findBridgedMethod(specificMethod);
+     //3. 判断使用哪个执行器执行被代理的方法
+     AsyncTaskExecutor executor = determineAsyncExecutor(userDeclaredMethod);
+     if (executor == null) {
+     throw new IllegalStateException("No executor specified and no default executor set on AsyncExecutionInterceptor either");
+      }
+      //4. 使用Callable包装要执行的方法
+      Callable<Object> task = () -> {
+      try {
+        Object result = invocation.proceed();
+        if (result instanceof Future) {
+            return ((Future<?>) result).get();
+            }
+        }
+        catch (ExecutionException ex)
+        {
+        handleError(ex.getCause(), userDeclaredMethod, invocation.getArguments());
+        }
+        catch (Throwable ex)
+        {
+            handleError(ex, userDeclaredMethod, invocation.getArguments());
+        }
+        return null;
+        };
+      //5. 提交包装的Callable任务到指定执行器执行
+      return doSubmit(task, executor, invocation.getMethod().getReturnType());
+    }
+
+代码3根据规则获取使用的是个执行器，其代码如下所示：
+private final Map<Method, AsyncTaskExecutor> executors = new ConcurrentHashMap<>(16);
+protected AsyncTaskExecutor determineAsyncExecutor(Method method) {
+    //4.1获取对应方法的执行器
+    //从缓冲executors中尝试获取method方法对应的执行器，如果存在则直接执行代码4.3返回
+    AsyncTaskExecutor executor = this.executors.get(method);
+    //4.2不存在则按照规则查找
+    if (executor == null) {
+        //4.2.1 如果注解@Async中指定了执行器名称
+        //如果有就从Spring的bean工厂内获取该名称的执行器的实例，否则执行代码4.2.2获取默认的执行器（SimpleAsyncTaskExecutor）
+        //然后代码4.2.4放入缓冲中
+        Executor targetExecutor;
+        String qualifier = getExecutorQualifier(method);
+        if (StringUtils.hasLength(qualifier)) {
+            targetExecutor = findQualifiedExecutor(this.beanFactory, qualifier);
+        }
+        //4.2.2 获取默认执行器
+        else {
+               targetExecutor = this.defaultExecutor;
+               if (targetExecutor == null) {
+                    synchronized (this.executors) {
+                        if (this.defaultExecutor == null) {
+                            this.defaultExecutor = getDefaultExecutor(this.beanFactory);
+                        }
+                        targetExecutor = this.defaultExecutor;
+                      }
+                }
+            }
+            //4.2.3
+            if (targetExecutor == null) {
+            return null;
+            }
+            //4.2.4 添加执行器到缓存
+            executor = (targetExecutor instanceof AsyncListenableTaskExecutor ?(AsyncListenableTaskExecutor) targetExecutor : new TaskExecutorAdapter(targetExecutor));
+            this.executors.put(method, executor);
+        }
+        //4.3返回查找的执行器
+        return executor;
+}
+至此，AnnotationAsyncExecutionInterceptor拦截器invoken方法中的代码3是如何确定执行器的，
+然后代码4使用Calllable包装要执行的方法
+代码5提交包装的Callable方法任务到指定执行器
+到这里所有的执行都是调用线程在执行，调用线程提交任务到执行器就返回了，异步任务真正执行的是具体的执行器中的线程。
+
+代码5：doSubmit的代码如下：
+protected Object doSubmit(Callable<Object> task, AsyncTaskExecutor executor, Class<?> returnType) {
+    //5.1判断方法返回值是否为CompletableFuture类型或者是其子类，如果是则把任务使用
+    if (CompletableFuture.class.isAssignableFrom(returnType)) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return task.call();
+            }
+            catch (Throwable ex) {
+                throw new CompletionException(ex);
+             }
+         }, executor);
+    }
+    //5.2判断返回值类型是否为ListenableFuture类型或者是其子类，如果是则把任务提交到线程池executor执行，
+    //该方法马上返回一个ListenableFuture对象
+    else if (ListenableFuture.class.isAssignableFrom(returnType)) {
+        return ((AsyncListenableTaskExecutor) executor).submitListenable(task);
+     }
+     //5.3判断返回值类型是否为ListenableFuture类型或者是其子类
+     //如果是则把方法任务提交到线程池executor执行，该方法马上返回一个Future对象
+     else if (Future.class.isAssignableFrom(returnType)) {
+        return executor.submit(task);
+     }
+     //5.4其他情况下没有返回值，说明方法不需要返回值，直接提交任务到线程池executor后返回null
+     else {
+        executor.submit(task);
+        return null;
+     }
+}
+上面讲解的是拦截器是如何对标注@Async方法进行处理的，实现异步执行还需要@EnableAsync来开启异步处理
+
+Spring容器对@EnableAsync注解的处理：
+Spring容器启动的过程中会有一系列扩展接口对Bean的元数据定义、初始化、实例化拦截处理，
+也存在一些处理器类可以动态的向Spring容器添加添加一些框架需要使用的Bean实例。
+其中ConfigurationClassPostProcessor处理器类则是用来解析注册类，并把其注册到Spring容器中的，
+其可以解析标注@Configuration、@Component、@ComponentScan、@Import、@ImportResource等的Bean
+
+@EnableAsync定义如下：
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Import(AsyncConfigurationSelector.class)
+public @interface EnableAsync {...}
+所以我们添加了@EnableAsync注解后，
+ConfigurationClassPostProcessor会解析其中的@Import(AsyncConfigurationSelector.class)
+并把AsyncConfigurationSelector的实例注入Spring容器，其代码如下：

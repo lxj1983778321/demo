@@ -1,0 +1,85 @@
+异步编程：
+execute源码解析：
+（1）片段3指如果线程池个数小于corePoolSize，则会调用addWorker新增一个核心线程执行改任务
+（2）如果当前线程池个数大于等于corePoolSize则执行片段4，如果当前线程池处于Running状态则添加当前任务到任务队列，这里需要判断线程池状态是
+因为线程池有可能已经发生了变化，状态如果为非Running是抛弃新任务的
+（3）如果任务添加任务队列成功，则二次校验，因为执行片段4.2之前状态有可能变化
+（4）如果片段4添加任务失败，则说明任务队列满了，那么尝试调用addWorker方法开启新线程，如果当前线程池中线程个数大于maximumPoolSize则addWorker返回false，执行拒绝策略
+public void execute(Runnable command) {
+    //（1）如果任务为空，则抛出NPE异常
+    if (command == null) {
+        throw new NullPointerException();
+    } else {
+        //（2）获取当前线程池的状态——线程个数的组合值（ct1的高三位为线程池状态，其余位为线程池中线程个数）
+        int c = this.ctl.get();
+        //（3）当前线程池个数是否小于corePoolSize，小于则开启新线程运行
+        if (workerCountOf(c) < this.corePoolSize) {
+            if (this.addWorker(command, true)) {
+                return;
+            }
+
+            c = this.ctl.get();
+        }
+        //（4）线程池处于Running状态，则添加任务到阻塞队列
+        if (isRunning(c) && this.workQueue.offer(command)) {
+            //（4.1）二次检查
+            int recheck = this.ctl.get();
+            //（4.2）如果当前线程池状态不是Running则从队列删除任务，并执行拒绝策略
+            if (!isRunning(recheck) && this.remove(command)) {
+                this.reject(command);
+            }
+            //（4.3）如果当前线程池为空，则添加一个线程
+            else if (workerCountOf(recheck) == 0) {
+                this.addWorker((Runnable)null, false);
+            }
+        }
+         //（5）如果队列满了，则新增线程，新增失败则执行拒绝策略
+         else if (!this.addWorker(command, false)) {
+            this.reject(command);
+        }
+
+    }
+}
+
+FutureTask：
+当我们创建一个/futureTask时，其任务状态初始化为NEW，当我们把任务提交到线程或者线程池后，会有一个线程来执行该FutureTask任务，
+具体是调用其run方法来执行任务。在任务执行过程中，我们可以在其他线程调用FutureTask的get()方法来等待获取结果，如果当前任务还在执行过程中，
+则调用get()方法的线程会被阻塞，然后放入FutureTask内的阻塞链表队列，多个线程可以同时调用get方法，这些线程可能都会被阻塞并放入到阻塞链表队列中，
+当任务执行完毕后会把结果或者异常信息设置到outcome变量，然后会移除和唤醒FutureTask内阻塞链表队列中的线程节点，
+进而这些由于调用FutureTask的get方法而被阻塞的线程就会被激活
+缺点：
+不能清除表达多个FutureTask之间的关系，另外从FutureTask获取结果必须调用get()方法，这个方法还是会在任务执行完毕前阻塞调用的线程
+
+JDK1.8出现的CompletableFuture
+CompletableFuture是一个可以通过编程来显示设置结果和状态以便让任务结束的Future，
+并且可以作为CompletionStage（计算阶段），当他的计算完成时可以触发一个函数或者行为，
+当多个线程企图调用同一个CompletableFuture的complete、cancel方式只有一个线程会成功
+
+CompletableFuture除了含有可以直接操作任务状态和结果的方法外，还实现了CompletionStage接口的一些方法，这些方法遵循：
+（1）当CompletableFuture任务完成后，同步使用任务执行线程来执行依赖任务结果的函数或行为
+（2）所有异步的方法在没有显式指定Executor参数的情形下都是复用ForkJoinPool.commonPool()线程池来执行
+（3）所有CompletionStage方法的实现都是相互独立的，以便一个方法行为不会因为重载了其他方法而受到影响。
+
+一个CompletableFuture任务可能有一些依赖其计算结果的行为方法，这些行为方法被收集到一个无锁基于CAS操作来链接起来的链表组成的栈中；
+当Completable-Future的计算任务完成后，会自动弹出栈中的行为方法并执行。
+需要注意的是，由于是栈结构，在同一个CompletableFuture对象上行为注册的顺序与行为执行的顺序是相反的。
+默认情况下支撑CompletableFuture异步运行的是ForkJoinPool（分治编程框架）
+ForkJoinPool在很多任务会产生子任务或者有很多小的任务被提交到线程池来执行的情况下非常高效。
+ForkJoinPool中有一个静态的线程池commonPool可用且适用大多数情况。
+commonPool会被任何未显式提交到指定线程池的ForkJoinTask执行使用。
+使用commonPool通常会减少资源使用（其线程数量会在不活跃时缓慢回收，并在任务数比较多的时候按需增加）。
+默认情况下，commonPool的参数可以通过system properties中的三个参数来控制：
+·java.util.concurrent.ForkJoinPool.common.parallelism：并行度级别，非负整数。
+·java.util.concurrent.ForkJoinPool.common.threadFactory：ForkJoinWorker ThreadFactory的类名。
+·java.util.concurrent.ForkJoinPool.common.exceptionHandler：Uncaught ExceptionHandler的类名。
+对于需要根据不同业务对线程池进行隔离或者定制的情况，可以使用ForkJoinPool的构造函数显式设置线程个数，默认情况下线程个数等于当前机器上可用的CPU个数。
+ForkJoinPool中提供了任务执行、任务生命周期控制的方法，还提供了任务状态监测的方法，比如getStealCount可以帮助调整和监控fork/join应用程序。
+另外，toSring方法会非常方便地返回当前线程池的状态（运行状态、线程池线程个数、激活线程个数、队列中任务个数）。
+另外，当线程池关闭或者内部资源被耗尽（比如当某个队列大小大于67108864时），再向线程池提交任务会抛出RejectedExecutionException异常。
+
+总结CompletableFuture：
+当我们使用CompletableFuture实现异步编程时，大多数不需要显示创建线程池，并投递到线程池内，
+我们只需要简单地调用CompletableFuture的runAsync或者SupplyAsync等方法把异步任务作为参数即可，其内部会使用ForkJoinPool线程池来进行异步执行的支持。
+
+
+JDK8提供了流式对数据进行处理的功能，允许我们以声明式方式对数据集合进行处理，使用流可以让我们很方便地对数据集进行并行处理。
